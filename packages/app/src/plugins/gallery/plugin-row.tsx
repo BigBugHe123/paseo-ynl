@@ -1,6 +1,6 @@
 import { ChevronRight } from "lucide-react-native";
-import { useCallback, useMemo, type ReactNode } from "react";
-import { Image, Text, View, type PressableStateCallbackType } from "react-native";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { Image, Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { foregroundIconColorMapping, mutedIconColorMapping } from "@/components/ui/icon-color";
 import { PressHighlight } from "@/components/ui/press-highlight";
@@ -8,7 +8,6 @@ import { settingsStyles } from "@/styles/settings";
 import { ICON_SIZE } from "@/styles/theme";
 
 const ThemedChevron = withUnistyles(ChevronRight);
-type HoverState = PressableStateCallbackType & { hovered?: boolean };
 
 /** A plugin's icon, or its initial on a neutral tile when it has none. */
 export function PluginTile({
@@ -94,60 +93,68 @@ export function PluginRow({
   accessibilityLabel,
   testID,
 }: PluginRowProps) {
-  const rowStyle = useCallback(
-    ({ hovered }: HoverState) => [settingsStyles.row, styles.row, hovered && styles.hovered],
-    [],
-  );
+  const [hovered, setHovered] = useState(false);
+  const handlePointerEnter = useCallback(() => setHovered(true), []);
+  const handlePointerLeave = useCallback(() => setHovered(false), []);
   return (
-    <PressHighlight
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      onPress={onPress}
-      style={rowStyle}
-      highlightStyle={styles.pressed}
-      testID={testID}
+    <View
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+      style={[settingsStyles.row, styles.row, hovered && styles.hovered]}
     >
-      {({ hovered }: HoverState) => (
-        <>
-          <PluginTile name={name} icon={icon} />
-          <View style={styles.text}>
-            <View style={styles.titleRow}>
-              <Text style={styles.title} numberOfLines={1}>
-                {name}
-              </Text>
-              {badge}
+      <PressHighlight
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        onPress={onPress}
+        style={styles.mainPressable}
+        highlightStyle={styles.pressed}
+        testID={testID}
+      >
+        <PluginTile name={name} icon={icon} />
+        <View style={styles.text}>
+          <View style={styles.titleRow}>
+            <Text style={styles.title} numberOfLines={1}>
+              {name}
+            </Text>
+            {badge}
+          </View>
+          {description ? (
+            <Text style={styles.description} numberOfLines={1}>
+              {description}
+            </Text>
+          ) : null}
+          {error ? (
+            <Text accessibilityRole="alert" style={styles.error} numberOfLines={2}>
+              {error}
+            </Text>
+          ) : null}
+          {meta && !error ? (
+            <View style={styles.meta}>
+              <PluginMeta text={meta} authorAvatar={authorAvatar} />
             </View>
-            {description ? (
-              <Text style={styles.description} numberOfLines={1}>
-                {description}
-              </Text>
-            ) : null}
-            {error ? (
-              <Text accessibilityRole="alert" style={styles.error} numberOfLines={2}>
-                {error}
-              </Text>
-            ) : null}
-            {meta && !error ? (
-              <View style={styles.meta}>
-                <PluginMeta text={meta} authorAvatar={authorAvatar} />
-              </View>
-            ) : null}
-          </View>
-          {children}
-          <View style={styles.chevron}>
-            <ThemedChevron
-              size={ICON_SIZE.sm}
-              uniProps={hovered ? foregroundIconColorMapping : mutedIconColorMapping}
-            />
-          </View>
-        </>
-      )}
-    </PressHighlight>
+          ) : null}
+        </View>
+        <View style={styles.chevron}>
+          <ThemedChevron
+            size={ICON_SIZE.sm}
+            uniProps={hovered ? foregroundIconColorMapping : mutedIconColorMapping}
+          />
+        </View>
+      </PressHighlight>
+      {children}
+    </View>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
   row: { gap: theme.spacing[3] },
+  mainPressable: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[3],
+  },
   hovered: { backgroundColor: theme.colors.surface2 },
   pressed: { backgroundColor: theme.colors.surface3 },
   tile: {

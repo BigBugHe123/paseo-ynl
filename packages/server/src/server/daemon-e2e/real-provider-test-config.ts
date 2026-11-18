@@ -11,6 +11,7 @@ import { CodexAppServerAgentClient } from "../agent/providers/codex-app-server-a
 import { OpenCodeAgentClient } from "../agent/providers/opencode-agent.js";
 import { OmpAgentClient } from "../agent/providers/omp/agent.js";
 import { PiRpcAgentClient } from "../agent/providers/pi/agent.js";
+import { resolvePiCommand } from "../agent/providers/pi/command.js";
 import { isCommandAvailable } from "../../executable-resolution/executable-resolution.js";
 
 export const realProviders = ["claude", "codex", "opencode", "pi", "omp"] as const;
@@ -173,7 +174,7 @@ export function canRunRealProvider(provider: RealProvider): Promise<boolean> {
     if (provider !== "omp" && provider !== "pi" && !getOpenRouterApiKeyOrNull()) {
       return false;
     }
-    return await isCommandAvailable(getProviderBinary(provider));
+    return await isCommandAvailable(await getProviderBinary(provider));
   })();
 
   availabilityCache.set(provider, availability);
@@ -245,9 +246,9 @@ function readJsonFile(filePath: string): unknown {
   }
 }
 
-function getProviderBinary(provider: RealProvider): string {
+async function getProviderBinary(provider: RealProvider): Promise<string> {
   if (provider === "pi") {
-    return process.env.PI_COMMAND ?? process.env.PI_ACP_PI_COMMAND ?? "pi";
+    return (await resolvePiCommand())[0];
   }
   if (provider === "omp") {
     return process.env.OMP_COMMAND ?? "omp";

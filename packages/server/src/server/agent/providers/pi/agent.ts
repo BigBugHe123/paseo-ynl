@@ -71,6 +71,7 @@ import {
   type ProviderImageOutput,
 } from "../provider-image-output.js";
 import { PiCliRuntime } from "./cli-runtime.js";
+import { resolvePiCommand } from "./command.js";
 import {
   createPiExtensionHost,
   piExtensionRuntimeBridge,
@@ -107,7 +108,6 @@ import {
 
 const PI_PROVIDER = "pi";
 const DEFAULT_PI_THINKING_LEVEL: PiThinkingLevel = "medium";
-const PI_BINARY_COMMAND = process.env.PI_COMMAND ?? process.env.PI_ACP_PI_COMMAND ?? "pi";
 const PASEO_PI_TREE_EXTENSION_COMMAND = "paseo_tree";
 const PASEO_PI_CAPTURE_EXTENSION_COMMAND = "paseo_capture_entries";
 const PASEO_PI_REWIND_ENTRY_TYPE = "paseo_rewind";
@@ -1148,15 +1148,15 @@ function mapPiModel(model: PiModel, provider: AgentProvider): AgentModelDefiniti
   };
 }
 
-function createRuntime(
+async function createRuntime(
   logger: Logger,
   runtimeSettings: ProviderRuntimeSettings | undefined,
   requestTimeoutMs: number,
-): PiRuntime {
+): Promise<PiRuntime> {
   return new PiCliRuntime({
     logger,
     runtimeSettings,
-    command: [PI_BINARY_COMMAND],
+    command: await resolvePiCommand(),
     commandsRpcName: "get_commands",
     requestTimeoutMs,
   });
@@ -2593,7 +2593,7 @@ export class PiRpcAgentClient implements AgentClient {
     launchContext?: AgentLaunchContext,
   ): Promise<AgentSession> {
     const providerOptions = PiProviderOptionsSchema.parse(config.providerOptions ?? {});
-    const runtime = this.resolveRuntime(providerOptions.rpcTimeoutMs);
+    const runtime = await this.resolveRuntime(providerOptions.rpcTimeoutMs);
     const mcpEnv = {
       ...this.runtimeSettings?.env,
       ...launchContext?.env,
@@ -2657,7 +2657,7 @@ export class PiRpcAgentClient implements AgentClient {
     const providerOptions = PiProviderOptionsSchema.parse(
       resumeConfig.config.providerOptions ?? {},
     );
-    const runtime = this.resolveRuntime(providerOptions.rpcTimeoutMs);
+    const runtime = await this.resolveRuntime(providerOptions.rpcTimeoutMs);
     const mcpEnv = {
       ...this.runtimeSettings?.env,
       ...launchContext?.env,
@@ -2756,7 +2756,7 @@ export class PiRpcAgentClient implements AgentClient {
     context?: ProviderRefreshContext,
   ): Promise<ProviderCatalog> {
     const providerOptions = PiProviderOptionsSchema.parse(options.providerOptions ?? {});
-    const runtime = this.resolveRuntime(providerOptions.rpcTimeoutMs);
+    const runtime = await this.resolveRuntime(providerOptions.rpcTimeoutMs);
     let runtimeSession: PiRuntimeSession | undefined;
     let closePromise: Promise<void> | undefined;
     const closeSession = () => {
@@ -2860,8 +2860,8 @@ export class PiRpcAgentClient implements AgentClient {
     }
   }
 
-  private resolveRuntime(rpcTimeoutMs: number): PiRuntime {
-    return this.runtime ?? createRuntime(this.logger, this.runtimeSettings, rpcTimeoutMs);
+  private async resolveRuntime(rpcTimeoutMs: number): Promise<PiRuntime> {
+    return this.runtime ?? (await createRuntime(this.logger, this.runtimeSettings, rpcTimeoutMs));
   }
 
   private async prepareMcpInjection(
@@ -2915,7 +2915,7 @@ export class PiRpcAgentClient implements AgentClient {
   private async resolvePiLaunch(): Promise<ResolvedProviderLaunch> {
     return resolveProviderLaunch({
       commandConfig: this.runtimeSettings?.command,
-      defaultBinary: PI_BINARY_COMMAND,
+      defaultBinary: (await resolvePiCommand())[0],
     });
   }
 }
