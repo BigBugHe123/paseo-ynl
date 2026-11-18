@@ -54,7 +54,11 @@ const snapshotIconComponents = new Map<string, ProviderIconComponent>();
 
 /** Renders a sanitized SVG string from a host catalog, tinted through `currentColor`. */
 export function SvgIcon({ svg, size, color }: ProviderIconProps & { svg: string }) {
-  return createElement(SvgXml, { xml: svg, width: size, height: size, color });
+  // react-native-svg camel-cases XML attributes, turning `aria-label` into the
+  // invalid React DOM prop `ariaLabel` on web. Provider marks are decorative;
+  // their surrounding controls carry the accessible label.
+  const decorativeSvg = svg.replace(/\s+aria-[\w:-]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi, "");
+  return createElement(SvgXml, { xml: decorativeSvg, width: size, height: size, color });
 }
 
 function createSvgIcon(provider: string, iconSvg: string): ProviderIconComponent {

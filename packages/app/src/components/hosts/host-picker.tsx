@@ -87,37 +87,31 @@ export function HostPickerOption({
     },
     [onOpenHostSettings, serverId],
   );
-  const trailingSlot = useMemo(() => {
-    if (!onOpenHostSettings) return undefined;
-    return (
-      <Pressable
-        onPress={handleSettingsPress}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel={`Open ${label} settings`}
-      >
-        <Settings size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />
-      </Pressable>
-    );
-  }, [
-    handleSettingsPress,
-    label,
-    onOpenHostSettings,
-    theme.colors.foregroundMuted,
-    theme.iconSize.sm,
-  ]);
-
   return (
-    <ComboboxItem
-      label={label}
-      description={connectionLabel}
-      leadingSlot={leadingSlot}
-      trailingSlot={trailingSlot}
-      selected={selected}
-      active={active}
-      onPress={onPress}
-      testID={testID}
-    />
+    <View style={styles.hostOptionRow}>
+      <View style={styles.hostOptionMain}>
+        <ComboboxItem
+          label={label}
+          description={connectionLabel}
+          leadingSlot={leadingSlot}
+          selected={selected}
+          active={active}
+          onPress={onPress}
+          testID={testID}
+        />
+      </View>
+      {onOpenHostSettings ? (
+        <Pressable
+          onPress={handleSettingsPress}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${label} settings`}
+          style={styles.hostOptionSettings}
+        >
+          <Settings size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 
@@ -319,6 +313,19 @@ export function HostPicker({
 }
 
 const styles = StyleSheet.create((theme) => ({
+  hostOptionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  hostOptionMain: {
+    flex: 1,
+  },
+  hostOptionSettings: {
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   statusDotSlot: {
     width: theme.iconSize.sm,
     height: theme.iconSize.sm,
